@@ -1,20 +1,17 @@
-# SP-Local-Recorder
-Basic local recorder in web app for whole screen recording with webcam
+# SP Local Recorder
 
-> **Important:**  
-> For the best experience, open the recorder in a browser window you do **not** plan to share or record.  
-> **Keep the recorder tab open and active during your recording.**  
+A simple, local browser-based screen recorder for creating demos, training videos, and walkthroughs. All recordings stay on your machine - no cloud uploads.
+
+> **Important:**
+> For the best experience, open the recorder in a browser window you do **not** plan to share or record.
+> **Keep the recorder tab open and active during your recording.**
 > If you interact with another tab in the same browser window, the recording may freeze or stop.
-
-# LocalLoom - Local Screen Recorder
-
-A simple, local alternative to Loom for recording screen demos, training videos, and walkthroughs. All recordings stay on your machine - no cloud uploads.
 
 ## Features
 
 - **Screen Recording**
-  - Record full screen or select specific area
-  - Choose from multiple screens/windows
+  - Record full screen, specific windows, or tabs
+  - Choose from multiple screens/windows via browser picker
   - Support for 1080p (Full HD) and 4K (Ultra HD) quality
 
 - **Webcam Overlay**
@@ -33,78 +30,98 @@ A simple, local alternative to Loom for recording screen demos, training videos,
   - Real-time preview
   - Recording timer
 
-- **Output**
-  - Saves as MP4 format
-  - Automatic WebM to MP4 conversion using FFmpeg
-  - Choose custom save location
+- **Output Options**
+  - Saves as WebM format (always)
+  - Optional MP4 conversion using browser-based FFmpeg
+  - Toggle MP4 conversion on/off
+  - Both files download separately when MP4 is enabled
+  - Custom filename support
 
 ## System Requirements
 
-- macOS 10.13+ or Windows 10+
-- Node.js 16+ (for development)
-- 4GB RAM minimum
-- For 4K recording: 8GB RAM recommended
+- **Operating System**: macOS 10.13+, Windows 10+, or modern Linux
+- **Browser**: Chrome, Edge, or any Chromium-based browser (latest version recommended)
+- **Node.js**: Version 18 or higher (for running the development server)
+- **RAM**: 4GB minimum, 8GB recommended for 4K recording
+- **Disk Space**: 100MB for application + space for recordings
 
 ## Installation
 
-1. Clone or download this repository
+### Quick Installation (Recommended)
 
-2. Install dependencies:
+**macOS/Linux:**
+```bash
+git clone https://github.com/YOUR-USERNAME/sp-local-recorder.git
+cd sp-local-recorder
+./install.sh
+```
+
+**Windows:**
+```bash
+git clone https://github.com/YOUR-USERNAME/sp-local-recorder.git
+cd sp-local-recorder
+install.bat
+```
+
+The installation script will:
+1. Check if Node.js is installed (required)
+2. Install all npm dependencies automatically
+3. Confirm when ready to run
+
+### Manual Installation
+
+If you prefer to install manually or already have Node.js:
+
+1. **Install Node.js** (if not already installed):
+   - Download from [nodejs.org](https://nodejs.org/) (v18 or higher)
+   - Or use a package manager:
+     - macOS: `brew install node`
+     - Windows: `choco install nodejs`
+     - Linux: `sudo apt install nodejs npm` (Ubuntu/Debian)
+
+2. **Clone the repository:**
+```bash
+git clone https://github.com/YOUR-USERNAME/sp-local-recorder.git
+cd sp-local-recorder
+```
+
+3. **Install dependencies:**
 ```bash
 npm install
 ```
 
 ## Running the Application
 
-### Development Mode
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-This will start the Vite development server and launch the Electron application with hot-reload enabled.
+The application will open at `http://localhost:5173` in your default browser.
 
-### Production Mode
-
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Start the application:
-```bash
-npm start
-```
-
-### Package as Standalone App
-
-To create a distributable application:
-
-```bash
-npm run package
-```
-
-This will create platform-specific installers in the `dist` folder.
+> **Note:** Keep the terminal window open while using the application. The server must remain running.
 
 ## How to Use
 
-> **Tip:**  
-> Open the recorder in a browser window you do **not** intend to share or record.  
-> Keep the recorder tab open and do not switch to other tabs in the same window while recording.  
+> **Tip:**
+> Open the recorder in a browser window you do **not** intend to share or record.
+> Keep the recorder tab open and do not switch to other tabs in the same window while recording.
 > If you switch tabs or close the recorder tab, the recording may freeze or stop.
 
-1. **Launch the application**
+1. **Launch the application** (`npm run dev`)
 
 2. **Configure your recording settings:**
-   - **Screen Capture**: Choose between full screen or area selection. If full screen, select which screen/window to record.
+   - **Screen Capture**: When you click Start Recording, your browser will prompt you to choose which screen, window, or tab to record
    - **Webcam**: Toggle on/off, adjust position, size, and shape
    - **Audio**: Enable/disable and select microphone
    - **Quality**: Choose between 1080p or 4K
-   - **Save Location**: Click "Browse" to select where to save the recording
+   - **Save Location**: Click "Browse" to generate a timestamped filename (files will download to your browser's default download folder)
+   - **MP4 Conversion**: Choose whether to save an MP4 version in addition to WebM
 
 3. **Start Recording:**
    - Click "Start Recording"
-   - If you selected "Area Selection", you'll be prompted to choose the area
+   - Select which screen/window/tab to share in the browser picker
    - The preview window will show your recording in real-time
 
 4. **Control Recording:**
@@ -112,8 +129,10 @@ This will create platform-specific installers in the `dist` folder.
    - **Stop**: Click to stop and save the recording
 
 5. **Save:**
-   - The recording will be automatically converted from WebM to MP4
-   - You'll get a notification when the save is complete
+   - WebM file will download immediately
+   - If MP4 conversion is enabled, you'll see a progress overlay
+   - MP4 file will download automatically when conversion completes
+   - Both files will have the same base filename
 
 ## Keyboard Shortcuts
 
@@ -122,58 +141,68 @@ Currently, all controls are via the UI. Keyboard shortcuts can be added in futur
 ## Platform Support
 
 - **macOS**: Fully supported and tested
-- **Windows**: Should work (Electron is cross-platform), but not extensively tested
-- **Linux**: Should work with minor adjustments
+- **Windows**: Fully supported (tested with Chrome/Edge)
+- **Linux**: Supported in Chromium-based browsers
 
 ## Technical Details
 
 ### Built With
 
-- **Electron**: Cross-platform desktop application framework
 - **React**: UI framework
 - **Vite**: Fast build tool and dev server
-- **FFmpeg**: Video encoding and format conversion
+- **FFmpeg.wasm**: Browser-based video format conversion
 - **MediaRecorder API**: Browser API for recording media streams
+- **Canvas API**: For compositing screen and webcam streams
 
 ### How It Works
 
-1. Captures screen using Chromium's `desktopCapturer` API
+1. Captures screen using browser's `getDisplayMedia` API
 2. Captures webcam and audio using `getUserMedia` API
-3. Combines streams on an HTML5 Canvas
+3. Combines streams on an HTML5 Canvas element
 4. Records canvas using MediaRecorder (WebM format)
-5. Converts WebM to MP4 using FFmpeg on save
+5. Optionally converts WebM to MP4 using FFmpeg.wasm (runs entirely in browser)
 
 ## Troubleshooting
 
 ### Recording won't start
-- **macOS**: Grant screen recording permissions in System Preferences → Security & Privacy → Privacy → Screen Recording
-- **Microphone**: Grant microphone permissions if audio is enabled
+- **Browser Permissions**: When prompted, click "Allow" to grant screen recording and microphone permissions
+- **macOS**: If needed, grant screen recording permissions in System Settings → Privacy & Security → Screen Recording
 - **Browser Tab**: Make sure the recorder tab is open and active. Do not switch to another tab in the same window during recording.
 
 ### No webcam detected
 - Check that your webcam is connected and not in use by another application
+- Refresh the page to re-detect devices
 - Try toggling webcam off if you only need screen recording
 
 ### Video quality is poor
 - Use 4K quality setting if your screen resolution is high
 - Ensure you have sufficient RAM (8GB+ for 4K)
 - Close unnecessary applications to free up system resources
+- Try recording in Chrome/Edge for best performance
 
 ### File size is too large
-- Use 1080p instead of 4K for shorter videos
-- The MP4 conversion already applies compression (CRF 22)
+- Use 1080p instead of 4K
+- Disable MP4 conversion if you only need WebM
+- The MP4 conversion applies compression (CRF 23)
 
-### FFmpeg conversion fails
-- Ensure you have enough disk space
-- Check that the save path is writable
-- Try a different save location
+### MP4 conversion fails or is slow
+- Ensure you have enough RAM (conversion happens in browser memory)
+- Close other browser tabs to free up resources
+- For long recordings, consider disabling MP4 conversion
+- MP4 conversion uses FFmpeg.wasm which loads from CDN on first use
+
+### Application won't start
+- Verify Node.js is installed: `node -v` (should be v18+)
+- Try deleting `node_modules` and running `npm install` again
+- Check that port 5173 is not in use by another application
 
 ## Privacy & Security
 
-- **100% Local**: All recordings are processed and stored locally on your machine
-- **No Cloud**: No data is sent to any server
+- **100% Local**: All recording and processing happens in your browser
+- **No Server Uploads**: Video files never leave your machine
 - **No Tracking**: No analytics or telemetry
 - **Open Source**: Full source code available for inspection
+- **FFmpeg via CDN**: FFmpeg.wasm core files load from unpkg.com CDN (cached after first load)
 
 ## License
 
