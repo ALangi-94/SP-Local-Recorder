@@ -1,4 +1,11 @@
-<<<<<<< HEAD
+# SP-Local-Recorder
+Basic local recorder in web app for whole screen recording with webcam
+
+> **Important:**  
+> For the best experience, open the recorder in a browser window you do **not** plan to share or record.  
+> **Keep the recorder tab open and active during your recording.**  
+> If you interact with another tab in the same browser window, the recording may freeze or stop.
+
 # LocalLoom - Local Screen Recorder
 
 A simple, local alternative to Loom for recording screen demos, training videos, and walkthroughs. All recordings stay on your machine - no cloud uploads.
@@ -81,6 +88,11 @@ This will create platform-specific installers in the `dist` folder.
 
 ## How to Use
 
+> **Tip:**  
+> Open the recorder in a browser window you do **not** intend to share or record.  
+> Keep the recorder tab open and do not switch to other tabs in the same window while recording.  
+> If you switch tabs or close the recorder tab, the recording may freeze or stop.
+
 1. **Launch the application**
 
 2. **Configure your recording settings:**
@@ -136,6 +148,7 @@ Currently, all controls are via the UI. Keyboard shortcuts can be added in futur
 ### Recording won't start
 - **macOS**: Grant screen recording permissions in System Preferences → Security & Privacy → Privacy → Screen Recording
 - **Microphone**: Grant microphone permissions if audio is enabled
+- **Browser Tab**: Make sure the recorder tab is open and active. Do not switch to another tab in the same window during recording.
 
 ### No webcam detected
 - Check that your webcam is connected and not in use by another application
@@ -184,7 +197,3 @@ Contributions are welcome! Feel free to submit issues or pull requests.
 ## Credits
 
 Created as a local alternative to Loom for privacy-conscious users who want full control over their recordings.
-=======
-# SP-Local-Recorder
-Basic local recorder in web app for whole screen recording with webcam
->>>>>>> ef02144199eb5bd0ead8f2090b65efd251bb10f2
