@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # LocalLoom - Local Screen Recorder
 
 A simple, local alternative to Loom for recording screen demos, training videos, and walkthroughs. All recordings stay on your machine - no cloud uploads.
@@ -183,3 +184,7 @@ Contributions are welcome! Feel free to submit issues or pull requests.
 ## Credits
 
 Created as a local alternative to Loom for privacy-conscious users who want full control over their recordings.
+=======
+# SP-Local-Recorder
+Basic local recorder in web app for whole screen recording with webcam
+>>>>>>> ef02144199eb5bd0ead8f2090b65efd251bb10f2
