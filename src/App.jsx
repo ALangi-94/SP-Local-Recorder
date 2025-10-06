@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 function App() {
   // Recording settings state
   const [webcamEnabled, setWebcamEnabled] = useState(true);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const ffmpegRef = useRef(null);
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [webcamPosition, setWebcamPosition] = useState('bottom-right');
   const [webcamSize, setWebcamSize] = useState(20); // percentage
   const [webcamShape, setWebcamShape] = useState('circle');
@@ -12,6 +18,7 @@ function App() {
   const [videoDevices, setVideoDevices] = useState([]);
   const [quality, setQuality] = useState('1080p');
   const [savePath, setSavePath] = useState('');
+  const [saveMP4, setSaveMP4] = useState(true);
 
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -29,10 +36,50 @@ function App() {
   const previewVideoRef = useRef(null);
   const timerIntervalRef = useRef(null);
 
-  // Get available media devices
+  // Get available media devices and load FFmpeg
   useEffect(() => {
     getMediaDevices();
+    loadFFmpeg();
   }, []);
+
+  const loadFFmpeg = async () => {
+    try {
+      console.log('Loading FFmpeg...');
+      const ffmpeg = new FFmpeg();
+      ffmpegRef.current = ffmpeg;
+
+      ffmpeg.on('log', ({ message }) => {
+        console.log('[FFmpeg]', message);
+      });
+
+      ffmpeg.on('progress', ({ progress }) => {
+        setConversionProgress(Math.round(progress * 100));
+      });
+
+      const baseURL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm';
+      console.log('Loading FFmpeg core files from:', baseURL);
+
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+      const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript');
+
+      console.log('Core URL:', coreURL);
+      console.log('WASM URL:', wasmURL);
+      console.log('Worker URL:', workerURL);
+
+      await ffmpeg.load({
+        coreURL,
+        wasmURL,
+        workerURL,
+      });
+
+      setFfmpegLoaded(true);
+      console.log('✅ FFmpeg loaded successfully');
+    } catch (err) {
+      console.error('❌ Failed to load FFmpeg:', err);
+      console.error('Error details:', err.message, err.stack);
+    }
+  };
 
   const getMediaDevices = async () => {
     try {
@@ -320,24 +367,87 @@ function App() {
     }
   };
 
-  const saveRecording = async (blob) => {
+  const downloadFile = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  const convertToMP4 = async (webmBlob, filename) => {
+    if (!ffmpegLoaded) {
+      console.error('FFmpeg not loaded yet');
+      return null;
+    }
+
     try {
-      // Create download link for browser
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = savePath || `recording-${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
+      setIsConverting(true);
+      setConversionProgress(0);
+      const ffmpeg = ffmpegRef.current;
+
+      // Write WebM file to FFmpeg virtual filesystem
+      await ffmpeg.writeFile('input.webm', await fetchFile(webmBlob));
+
+      // Convert to MP4
+      await ffmpeg.exec([
+        '-i', 'input.webm',
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-crf', '23',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        'output.mp4'
+      ]);
+
+      // Read the output file
+      const data = await ffmpeg.readFile('output.mp4');
+      const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
 
       // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
+      await ffmpeg.deleteFile('input.webm');
+      await ffmpeg.deleteFile('output.mp4');
 
-      console.log('Recording saved successfully');
+      setIsConverting(false);
+      return mp4Blob;
+    } catch (err) {
+      console.error('Conversion error:', err);
+      setIsConverting(false);
+      return null;
+    }
+  };
+
+  const saveRecording = async (blob) => {
+    try {
+      const baseFilename = savePath?.replace('.webm', '') || `recording-${Date.now()}`;
+
+      // Save WebM file
+      console.log('Saving WebM file...');
+      downloadFile(blob, `${baseFilename}.webm`);
+
+      // Convert and save MP4 file if enabled
+      if (saveMP4 && ffmpegLoaded) {
+        console.log('Converting to MP4...');
+        const mp4Blob = await convertToMP4(blob, baseFilename);
+        if (mp4Blob) {
+          console.log('Saving MP4 file...');
+          downloadFile(mp4Blob, `${baseFilename}.mp4`);
+          console.log('Both files saved successfully');
+        } else {
+          console.log('MP4 conversion failed, only WebM saved');
+        }
+      } else if (saveMP4 && !ffmpegLoaded) {
+        console.log('FFmpeg not loaded, only WebM saved');
+      } else {
+        console.log('MP4 conversion disabled, only WebM saved');
+      }
     } catch (err) {
       console.error('Error saving recording:', err);
       alert('Failed to save recording: ' + err.message);
@@ -384,6 +494,41 @@ function App() {
   return (
     <div className="app">
       <h1>SP Local Recorder</h1>
+
+      {isConverting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white'
+        }}>
+          <h2>Converting to MP4...</h2>
+          <div style={{
+            width: '300px',
+            height: '30px',
+            backgroundColor: '#333',
+            borderRadius: '15px',
+            overflow: 'hidden',
+            marginTop: '20px'
+          }}>
+            <div style={{
+              width: `${conversionProgress}%`,
+              height: '100%',
+              backgroundColor: '#4287f5',
+              transition: 'width 0.3s'
+            }} />
+          </div>
+          <p style={{ marginTop: '10px' }}>{conversionProgress}%</p>
+        </div>
+      )}
 
       {!isRecording ? (
         <>
@@ -527,6 +672,32 @@ function App() {
                 <button onClick={selectSavePath} className="btn-secondary" style={{ flex: 'none', padding: '10px 20px' }}>
                   Browse
                 </button>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <label>MP4 Conversion</label>
+              <div className="radio-group">
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="save-mp4-yes"
+                    value="yes"
+                    checked={saveMP4}
+                    onChange={() => setSaveMP4(true)}
+                  />
+                  <label htmlFor="save-mp4-yes">Save MP4 version as well as WebM</label>
+                </div>
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="save-mp4-no"
+                    value="no"
+                    checked={!saveMP4}
+                    onChange={() => setSaveMP4(false)}
+                  />
+                  <label htmlFor="save-mp4-no">Don't save MP4</label>
+                </div>
               </div>
             </div>
           </div>
